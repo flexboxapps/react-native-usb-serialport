@@ -1,10 +1,10 @@
-import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
-const Sockets = Platform.OS === 'android' ? NativeModules.RNSerialport : {};
+import { NativeEventEmitter, NativeModules, Platform } from "react-native";
+const Sockets = Platform.OS === "android" ? NativeModules.RNSerialport : {};
 
 let instanceNumber = 0;
 
 function getNextId() {
-    return instanceNumber++;
+  return instanceNumber++;
 }
 
 const nativeEventEmitter = new NativeEventEmitter(Sockets);

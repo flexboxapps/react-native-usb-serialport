@@ -11,7 +11,7 @@ const Sockets = Platform.OS === "android" ? NativeModules.RNSerialport : {};
 import Socket, { AddressInfo, NativeConnectionInfo } from "./Socket";
 import { nativeEventEmitter, getNextId } from "./Globals";
 
-export default class Server extends EventEmitter<
+class Server extends EventEmitter<
   "connection" | "listening" | "error" | "close"
 > {
   private _id: number;
@@ -126,10 +126,15 @@ export default class Server extends EventEmitter<
     return this;
   }
 
-  /**
-   * @private
-   */
-  _registerEvents() {
+  destroy() {
+    try {
+      this.emit("close");
+      this._errorListener?.remove();
+      this._connectionsListener?.remove();
+    } catch (error) {}
+  }
+
+  private _registerEvents() {
     this._errorListener = this._eventEmitter.addListener("listening", (evt) => {
       if (evt.id !== this._id) return;
       this._localAddress = evt.connection.localAddress;
@@ -137,11 +142,13 @@ export default class Server extends EventEmitter<
       this._localFamily = evt.connection.localFamily;
       this.emit("listening");
     });
+
     this._errorListener = this._eventEmitter.addListener("error", (evt) => {
       if (evt.id !== this._id) return;
       this.close();
       this.emit("error", evt.error);
     });
+
     this._connectionsListener = this._eventEmitter.addListener(
       "connection",
       (evt) => {
@@ -173,3 +180,5 @@ export default class Server extends EventEmitter<
     return newSocket;
   }
 }
+
+export default Server;

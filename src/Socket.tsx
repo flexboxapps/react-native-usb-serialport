@@ -57,10 +57,10 @@ export interface ConnectionOptions {
   tlsCert?: any;
 }
 
-export default class Socket extends EventEmitter<
+class Socket extends EventEmitter<
   "connect" | "timeout" | "data" | "error" | "close"
 > {
-  private _id: any; // TODO: Add typing
+  private _id: number | undefined;
   private _eventEmitter: NativeEventEmitter;
   private _timeoutMsecs: number;
   private _timeout: number | undefined;
@@ -68,8 +68,8 @@ export default class Socket extends EventEmitter<
   private _encoding: BufferEncoding | undefined;
   private localAddress: string | undefined;
   private localPort: number | undefined;
-  remoteAddress: string | undefined;
-  remotePort: number | undefined;
+  private _remoteAddress: string | undefined;
+  private _remotePort: number | undefined;
   private remoteFamily: string | undefined;
   private _destroyed: boolean;
 
@@ -78,47 +78,62 @@ export default class Socket extends EventEmitter<
   private _closeListener: EmitterSubscription | undefined;
   private _connectListener: EmitterSubscription | undefined;
 
+  get remoteAddress() {
+    return this._remoteAddress;
+  }
+
+  get remotePort() {
+    return this._remotePort;
+  }
+
+  /**
+   * Returns the bound `address`, the address `family` name and `port` of the socket as reported
+   * by the operating system: `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
+   */
+  get address(): AddressInfo | {} {
+    if (!this.localAddress) return {};
+    return {
+      address: this.localAddress,
+      family: this.remoteFamily,
+      port: this.localPort,
+    };
+  }
+
   /**
    * Creates a new socket object.
    */
   constructor() {
     super();
-    /** @private */
     this._id = undefined;
-    /** @private */
     this._eventEmitter = nativeEventEmitter;
-    /** @type {number} @private */
     this._timeoutMsecs = 0;
-    /** @private */
     this._timeout = undefined;
-    /** @type {number} @private */
     this._state = STATE.DISCONNECTED;
-    /** @private */
     this._encoding = undefined;
     this.localAddress = undefined;
     this.localPort = undefined;
-    this.remoteAddress = undefined;
-    this.remotePort = undefined;
+    this._remoteAddress = undefined;
+    this._remotePort = undefined;
     this.remoteFamily = undefined;
     this._destroyed = false;
     this._registerEvents();
   }
 
-  _setId(id: number) {
+  _setId = (id: number) => {
     this._id = id;
     this._registerEvents();
-  }
+  };
 
-  _setConnected(connectionInfo: NativeConnectionInfo) {
+  _setConnected = (connectionInfo: NativeConnectionInfo) => {
     this._state = STATE.CONNECTED;
     this.localAddress = connectionInfo.localAddress;
     this.localPort = connectionInfo.localPort;
-    this.remoteAddress = connectionInfo.remoteAddress;
+    this._remoteAddress = connectionInfo.remoteAddress;
     this.remoteFamily = connectionInfo.remoteFamily;
-    this.remotePort = connectionInfo.remotePort;
-  }
+    this._remotePort = connectionInfo.remotePort;
+  };
 
-  connect(options: ConnectionOptions, callback: () => void) {
+  connect = (options: ConnectionOptions, callback: () => void) => {
     if (this._id === undefined) this._setId(getNextId());
 
     const customOptions = { ...options };
@@ -147,7 +162,7 @@ export default class Socket extends EventEmitter<
       customOptions
     );
     return this;
-  }
+  };
 
   /**
    * Sets the socket to timeout after `timeout` milliseconds of inactivity on the socket. By default `TcpSocket` do not have a timeout.
@@ -159,7 +174,7 @@ export default class Socket extends EventEmitter<
    *
    * The optional `callback` parameter will be added as a one-time listener for the `'timeout'` event.
    */
-  setTimeout(timeout: number, callback?: () => void) {
+  setTimeout = (timeout: number, callback?: () => void) => {
     if (timeout === 0) {
       this._clearTimeout();
     } else {
@@ -167,7 +182,7 @@ export default class Socket extends EventEmitter<
     }
     if (callback) this.once("timeout", callback);
     return this;
-  }
+  };
 
   private _activateTimer(timeout?: number) {
     if (timeout !== undefined) this._timeoutMsecs = timeout;
@@ -192,10 +207,10 @@ export default class Socket extends EventEmitter<
    * For instance, calling `socket.setEncoding('utf8')` will cause the output data to be interpreted as UTF-8 data, and passed as strings.
    * Calling `socket.setEncoding('hex')` will cause the data to be encoded in hexadecimal string format.
    */
-  setEncoding(encoding: BufferEncoding) {
+  setEncoding = (encoding: BufferEncoding) => {
     this._encoding = encoding;
     return this;
-  }
+  };
 
   /**
    * Enable/disable the use of Nagle's algorithm. When a TCP connection is created, it will have Nagle's algorithm enabled.
@@ -204,24 +219,21 @@ export default class Socket extends EventEmitter<
    *
    * Passing `true` for `noDelay` or not passing an argument will disable Nagle's algorithm for the socket. Passing false for noDelay will enable Nagle's algorithm.
    */
-  setNoDelay(noDelay: boolean = true) {
+  setNoDelay = (noDelay: boolean = true) => {
     if (this._state != STATE.CONNECTED) {
       this.once("connect", () => this.setNoDelay(noDelay));
       return this;
     }
     Sockets.setNoDelay(this._id, noDelay);
     return this;
-  }
+  };
 
   /**
    * Enable/disable keep-alive functionality, and optionally set the initial delay before the first keepalive probe is sent on an idle socket.
    *
    * `initialDelay` is ignored.
-   *
-   * @param {boolean} enable Default: `false`
-   * @param {number} initialDelay ***IGNORED**. Default: `0`
    */
-  setKeepAlive(enable = false, initialDelay = 0) {
+  setKeepAlive = (enable = false, initialDelay: number = 0) => {
     if (this._state != STATE.CONNECTED) {
       this.once("connect", () => this.setKeepAlive(enable, initialDelay));
       return this;
@@ -235,25 +247,15 @@ export default class Socket extends EventEmitter<
 
     Sockets.setKeepAlive(this._id, enable, Math.floor(initialDelay));
     return this;
-  }
+  };
 
-  /**
-   * Returns the bound `address`, the address `family` name and `port` of the socket as reported
-   * by the operating system: `{ port: 12346, family: 'IPv4', address: '127.0.0.1' }`.
-   */
-  address(): AddressInfo | {} {
-    if (!this.localAddress) return {};
-    return {
-      address: this.localAddress,
-      family: this.remoteFamily,
-      port: this.localPort,
-    };
-  }
-
-  end(data: string | Buffer | Uint8Array, encoding: BufferEncoding) {
+  end = (data?: {
+    data: string | Buffer | Uint8Array;
+    encoding: BufferEncoding;
+  }) => {
     if (this._destroyed) return;
     if (data) {
-      this.write(data, encoding, () => {
+      this.write(data.data, data.encoding, () => {
         this._destroyed = true;
         Sockets.end(this._id);
       });
@@ -262,26 +264,26 @@ export default class Socket extends EventEmitter<
       this._clearTimeout();
       Sockets.end(this._id);
     }
-  }
+  };
 
-  destroy() {
+  destroy = () => {
     if (!this._destroyed) {
       this._destroyed = true;
       this._clearTimeout();
       Sockets.destroy(this._id);
     }
-  }
+  };
 
   /**
    * Sends data on the socket. The second parameter specifies the encoding in the case of a string — it defaults to UTF8 encoding.
    *
    * The optional callback parameter will be executed when the data is finally written out, which may not be immediately.
    */
-  write(
+  write = (
     buffer: string | Buffer | Uint8Array,
     encoding: BufferEncoding,
     callback: (error: string | null) => void
-  ) {
+  ) => {
     const self = this;
     if (this._state === STATE.DISCONNECTED)
       throw new Error("Socket is not connected.");
@@ -302,7 +304,7 @@ export default class Socket extends EventEmitter<
         }
       }
     );
-  }
+  };
 
   ref() {
     console.warn(
@@ -316,7 +318,7 @@ export default class Socket extends EventEmitter<
     );
   }
 
-  private _registerEvents() {
+  private _registerEvents = () => {
     this._unregisterEvents();
     this._dataListener = this._eventEmitter.addListener("data", (evt) => {
       if (evt.id !== this._id) return;
@@ -341,19 +343,19 @@ export default class Socket extends EventEmitter<
       this._setConnected(evt.connection);
       this.emit("connect");
     });
-  }
+  };
 
-  private _unregisterEvents() {
+  private _unregisterEvents = () => {
     this._dataListener?.remove();
     this._errorListener?.remove();
     this._closeListener?.remove();
     this._connectListener?.remove();
-  }
+  };
 
-  private _generateSendBuffer(
+  private _generateSendBuffer = (
     buffer: string | Buffer | Uint8Array,
     encoding: BufferEncoding
-  ) {
+  ) => {
     if (typeof buffer === "string") {
       return Buffer.from(buffer, encoding);
     } else if (Buffer.isBuffer(buffer)) {
@@ -365,11 +367,13 @@ export default class Socket extends EventEmitter<
         `Invalid data, chunk must be a string or buffer, not ${typeof buffer}`
       );
     }
-  }
+  };
 
-  private _setDisconnected() {
+  private _setDisconnected = () => {
     if (this._state === STATE.DISCONNECTED) return;
     this._unregisterEvents();
     this._state = STATE.DISCONNECTED;
-  }
+  };
 }
+
+export default Socket;

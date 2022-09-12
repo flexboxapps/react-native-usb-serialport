@@ -1,4 +1,4 @@
-import { createServer, createConnection, Server, Socket } from "../src/index";
+import * as RNTcpSockets from "../src/index";
 
 export interface IDevice {
   name: string;
@@ -298,7 +298,7 @@ interface RNSerialportStatic {
    *
    * @memberof RNSerialportStatic
    */
-  disconnect(): void;
+  disconnectAllDevices(): void;
 
   /**
    * Writes string to port
@@ -306,21 +306,22 @@ interface RNSerialportStatic {
    * @param {string} data
    * @memberof RNSerialportStatic
    */
-  writeString(data: string): void;
+  writeString(deviceName: string, message: string): void;
 
   /**
    * Writes Base64 string to port
    *
    * @param {string} data
+   * @param {string} deviceName
    * @memberof RNSerialportStatic
    */
-  writeBase64(data: string): void;
+  writeBase64(deviceName: string, data: string): void;
 
   /**
    * Writes hex string to port
    *
    * @param {string} data
-   * @memberof RNSerialportStatic
+   * @memberof RNSerialportStatic∂
    */
   writeHexString(data: string): void;
 
@@ -343,5 +344,4 @@ interface RNSerialportStatic {
   hexToUtf16(hex: string): string;
 }
 export var RNSerialport: RNSerialportStatic;
-
-export { createServer, createConnection, Server, Socket };
+export { RNTcpSockets };
