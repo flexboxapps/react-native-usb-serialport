@@ -1,3 +1,5 @@
+import { createServer, createConnection, Server, Socket } from "../src/index";
+
 export interface IDevice {
   name: string;
   vendorId: number;
@@ -7,7 +9,7 @@ export interface IDevice {
 export type Devices = Array<IDevice> | null;
 
 export interface IOnReadData {
-  payload: string | Array<number>
+  payload: string | Array<number>;
 }
 export interface IOnError {
   status: boolean;
@@ -16,12 +18,12 @@ export interface IOnError {
   exceptionErrorMessage?: string;
 }
 export interface IOnServiceStarted {
-  deviceAttached: boolean
+  deviceAttached: boolean;
 }
 
 interface DefinitionsStatic {
   DATA_BITS: {
-    DATA_BITS_5: number
+    DATA_BITS_5: number;
     DATA_BITS_6: number;
     DATA_BITS_7: number;
     DATA_BITS_8: number;
@@ -49,25 +51,25 @@ interface DefinitionsStatic {
     HEXSTRING: number;
   };
   DRIVER_TYPES: {
-    AUTO: string,
-    CDC: string,
-    CH34x: string,
-    CP210x: string,
-    FTDI: string,
-    PL2303: string
+    AUTO: string;
+    CDC: string;
+    CH34x: string;
+    CP210x: string;
+    FTDI: string;
+    PL2303: string;
   };
 }
 export var definitions: DefinitionsStatic;
 
 interface ActionsStatic {
-  ON_SERVICE_STARTED: string,
-  ON_SERVICE_STOPPED: string,
-  ON_DEVICE_ATTACHED: string,
-  ON_DEVICE_DETACHED: string,
-  ON_ERROR: string,
-  ON_CONNECTED: string,
-  ON_DISCONNECTED: string,
-  ON_READ_DATA: string
+  ON_SERVICE_STARTED: string;
+  ON_SERVICE_STOPPED: string;
+  ON_DEVICE_ATTACHED: string;
+  ON_DEVICE_DETACHED: string;
+  ON_ERROR: string;
+  ON_CONNECTED: string;
+  ON_DISCONNECTED: string;
+  ON_READ_DATA: string;
 }
 export var actions: ActionsStatic;
 
@@ -93,12 +95,86 @@ interface RNSerialportStatic {
   stopUsbService(): void;
 
   /**
+   *  @ReactMethod
+   *  public void setIsNativeGateway(final boolean isNativeGw) {
+   *    isNativeGateway = isNativeGw;
+   *  }
+   */
+  setIsNativeGateway(isNativeGw: boolean): void;
+
+  /**
+   *  @ReactMethod
+   *  public void setIsNativeGatewayJsEventEmitOnSerialportData(final boolean isJsEvent) {
+   *    isNativeGatewayJsEventEmitOnSerialportData = isJsEvent;
+   *  }
+   */
+  setIsNativeGatewayJsEventEmitOnSerialportData(isJsEvent: boolean): void;
+
+  /**
+   *  @ReactMethod
+   *  public void appBus2DeviceNamePut(Integer appBus, String deviceName) {
+   *    appBus2DeviceName.put(appBus, deviceName);
+   *  }
+   */
+  appBus2DeviceNamePut(appBus: number, deviceName: string): void;
+
+  /**
+   * @ReactMethod
+   * public void disconnectAllDevices() {
+   * if(!usbServiceStarted){
+   *   eventEmit(onErrorEvent, createError(Definitions.ERROR_USB_SERVICE_NOT_STARTED, Definitions.ERROR_USB_SERVICE_NOT_STARTED_MESSAGE));
+   *   return;
+   * }
+   */
+  disconnectAllDevices(): void;
+
+  /**
+   * @ReactMethod
+   * public void writeBytes(String deviceName, ReadableArray message) {
+   *   if(!usbServiceStarted){
+   *     eventEmit(onErrorEvent, createError(Definitions.ERROR_USB_SERVICE_NOT_STARTED, Definitions.ERROR_USB_SERVICE_NOT_STARTED_MESSAGE));
+   *     return;
+   *   }
+   *   UsbSerialDevice serialPort = serialPorts.get(deviceName);
+   *   if(serialPort == null) {
+   *     eventEmit(onErrorEvent, createError(Definitions.ERROR_THERE_IS_NO_CONNECTION, Definitions.ERROR_THERE_IS_NO_CONNECTION_MESSAGE));
+   *     return;
+   *   }
+   *   int length = message.size();
+   *   byte [] bytes = new byte[length];
+   *   for (int i = 0; i < length; i++) {
+   *     bytes[i] = (byte)message.getInt(i);
+   *   }
+   *   serialPort.write(bytes);
+   * }
+   */
+  writeBytes(deviceName: string, message: any[]): void;
+
+  /**
+   * @ReactMethod
+   * public void disconnectDevice(String deviceName) {
+   *  if(!usbServiceStarted){
+   *    eventEmit(onErrorEvent, createError(Definitions.ERROR_USB_SERVICE_NOT_STARTED, Definitions.ERROR_USB_SERVICE_NOT_STARTED_MESSAGE));
+   *    return;
+   *  }
+   *
+   *  if(!serialPorts.containsKey(deviceName)) {
+   *    eventEmit(onErrorEvent, createError(Definitions.ERROR_SERIALPORT_ALREADY_DISCONNECTED, Definitions.ERROR_SERIALPORT_ALREADY_DISCONNECTED_MESSAGE));
+   *    return;
+   *  }
+   *  stopConnection(deviceName);
+   *  serialPorts.remove(deviceName);
+   *
+   */
+  disconnectDevice(deviceName: string): void;
+
+  /**
    * Returns status via Promise
    *
    * @returns {Promise<boolean>}
    * @memberof RNSerialportStatic
    */
-  isOpen(): Promise<boolean>
+  isOpen(): Promise<boolean>;
 
   /**
    * Returns status boolean via Promise
@@ -106,11 +182,11 @@ interface RNSerialportStatic {
    * @returns {Promise<boolean>}
    * @memberof RNSerialportStatic
    */
-  isServiceStarted(): Promise<boolean>
+  isServiceStarted(): Promise<boolean>;
 
   /**
    * Returns support status
-   * 
+   *
    * @param {string} deviceName
    * @returns {Promise<boolean>}
    * @memberof RNSerialportStatic
@@ -203,7 +279,7 @@ interface RNSerialportStatic {
   /**
    * Returns the device list via Promise
    *
-   * @returns {Promise<Device>}
+   * @returns {Promise<Devices>}
    * @memberof RNSerialportStatic
    */
   getDeviceList(): Promise<Devices>;
@@ -246,7 +322,7 @@ interface RNSerialportStatic {
    * @param {string} data
    * @memberof RNSerialportStatic
    */
-  writeHexString(data: string): void
+  writeHexString(data: string): void;
 
   /**
    * Integer array convert to Utf16 string
@@ -255,7 +331,7 @@ interface RNSerialportStatic {
    * @returns {string}
    * @memberof RNSerialportStatic
    */
-  intArrayToUtf16(intArray: Array<number>): string
+  intArrayToUtf16(intArray: Array<number>): string;
 
   /**
    * Hex string convert to Utf16 string
@@ -264,6 +340,8 @@ interface RNSerialportStatic {
    * @returns {string}
    * @memberof RNSerialportStatic
    */
-  hexToUtf16(hex: string): string
+  hexToUtf16(hex: string): string;
 }
 export var RNSerialport: RNSerialportStatic;
+
+export { createServer, createConnection, Server, Socket };

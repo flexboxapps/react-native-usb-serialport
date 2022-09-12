@@ -34,7 +34,7 @@
   "author": "Melih YARIKKAYA, Li Zheng, Rapsssito",
   "license": "MIT",
   "peerDependencies": {
-    "react-native": "^0.59.0"
+    "react-native": "^0.69.5"
   },
   "dependencies": {
     "buffer": "^5.4.3",
